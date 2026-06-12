@@ -28,12 +28,14 @@ graph TD
     W2["talos-w2<br/>192.168.31.22<br/>Worker"]
 
     subgraph VIPs["MetalLB VIP Pool  192.168.31.50–.59"]
-        Pihole["Pi-hole<br/>192.168.31.53<br/>DNS :53 · Web :80"]
+        Minecraft["Minecraft Bedrock<br/>192.168.31.50<br/>UDP :19132"]
         HA["Home Assistant<br/>192.168.31.51<br/>Web :8123"]
+        Pihole["Pi-hole<br/>192.168.31.53<br/>DNS :53 · Web :80"]
     end
 
     Router -->|LAN| CP & W1 & W2 & Mac
     W1 --->|local-path PVC| Pihole
+    W1 --->|local-path PVC| Minecraft
     W2 --->|local-path PVC| HA
     Mac -->|kubectl| CP
     Mac -.->|"dig @192.168.31.53"| Pihole
@@ -54,6 +56,7 @@ graph TD
 | MetalLB | v0.16.1 | `metallb-system` | pool `192.168.31.50–.59` |
 | Pi-hole | chart 2.35.0 | `pihole` | `192.168.31.53` :53/:80 |
 | Home Assistant | stable | `home-assistant` | `192.168.31.51:8123` |
+| Minecraft Bedrock | latest | `minecraft` | `192.168.31.50:19132/UDP` |
 
 ---
 
@@ -98,6 +101,7 @@ talos-homelab/
 │   └── configs/               # MetalLB pools, Pi-hole HelmRelease + SealedSecret
 ├── apps/
 │   ├── homeassistant/         # Home Assistant StatefulSet + Services
+│   ├── minecraft/             # Minecraft Bedrock StatefulSet + Services (192.168.31.50:19132/UDP)
 │   └── nginx.yaml             # Demo app (GitOps smoke test)
 ├── config/                    # Talos machine configs — GITIGNORED (contain cluster keys)
 ├── infra/                     # Pre-Flux bring-up reference (kept as migration record)
