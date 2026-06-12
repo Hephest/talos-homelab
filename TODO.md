@@ -53,11 +53,21 @@ Full AC power loss took all 3 nodes down. Recovered with no rebuild:
 - [ ] **Harden:** scheduled `talosctl etcd snapshot` (single CP is a SPOF).
 - [ ] **Harden:** DHCP secondary DNS so LAN resolution survives a cluster/Pi-hole outage; UPS on the CP.
 
-## ⏳ Pending
-- [ ] **Task 4: GitOps Setup (FluxCD)**:
-    - [ ] Install Flux CLI: `brew install fluxcd/tap/flux`
-    - [ ] Bootstrap Flux onto cluster from GitHub repo.
-    - [ ] Verify Flux controllers running in `flux-system` namespace.
-- [ ] **Task 5: GitOps Application Deployment**:
-    - [ ] Create GitHub manifests repo and seed with Nginx deployment.
-    - [ ] Verify Flux syncs and Nginx is accessible at `http://192.168.31.20:30080`.
+## ✅ GitOps cutover — FluxCD + full infra adoption (2026-06-12)
+Repo: **github.com/Hephest/talos-homelab** (public). Flux path `clusters/homelab`.
+- [x] **Task 4: GitOps Setup (FluxCD)**:
+    - [x] Installed Flux CLI `2.8.8` + `kubeseal v0.37.0` (`brew install fluxcd/tap/flux kubeseal`).
+    - [x] **Bootstrapped via SSH deploy key** (generic git, not GitHub token): `flux bootstrap git --url=ssh://git@github.com/Hephest/talos-homelab.git --path=clusters/homelab --private-key-file=./flux-deploy-key`. Deploy key added read-write via `gh repo deploy-key add`.
+    - [x] All 4 controllers Running in `flux-system`.
+- [x] **Task 5: GitOps Application Deployment**:
+    - [x] nginx demo at `apps/nginx.yaml` → `http://192.168.31.20:30080` returns **HTTP 200**. Drift test passed (deleted deploy → Flux recreated it).
+- [x] **Existing infra adopted into Flux (zero disruption):**
+    - Repo layout: `clusters/homelab/{infrastructure-controllers,infrastructure-configs,apps}.yaml` (Kustomizations with `dependsOn` ordering) → `infrastructure/controllers` (sealed-secrets, MetalLB `0.16.1`, local-path vendored from live state), `infrastructure/configs` (MetalLB pools, Pi-hole `2.35.0`, Pi-hole SealedSecret), `apps`.
+    - MetalLB + Pi-hole HelmReleases **pinned to the deployed chart versions** so first reconcile was a no-op upgrade — Pi-hole pod/PVC and VIP `192.168.31.53` untouched (verified: `dig @192.168.31.53 talos-cp.lan → 192.168.31.20`, PVC still Bound on talos-w1).
+- [x] **Secrets via Sealed Secrets** (controller in `kube-system`, name `sealed-secrets-controller`). Pi-hole admin secret sealed → `infrastructure/configs/pihole-sealedsecret.yaml`. Adopted the pre-existing live secret by annotating it `sealedsecrets.bitnami.com/managed=true` (controller refuses to overwrite unmanaged secrets) + controller restart; secret now owns by `SealedSecret`.
+- [x] **Public-repo safety:** `config/*.yaml` (Talos machine configs) + `config/talosconfig` + `flux-deploy-key*` are **gitignored** — they hold cluster CA keys/bootstrap token/etcd certs. Verified remote tree contains none.
+
+### ⏳ GitOps follow-ups
+- [ ] Migrate remaining manual bits / decommission `infra/` once confident (kept as migration record).
+- [ ] Consider Flux `image-automation` or Renovate for chart/image bumps (versions are currently pinned for safe adoption).
+- [ ] Optional: move etcd-snapshot hardening (below) into a Flux-managed CronJob.
