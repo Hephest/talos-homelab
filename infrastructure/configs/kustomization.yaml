@@ -1,0 +1,6 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - metallb-pools.yaml
+  - pihole.yaml
+  # - pihole-sealedsecret.yaml   # added after the sealed-secrets controller is up

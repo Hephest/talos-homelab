@@ -1,0 +1,20 @@
+# MetalLB L2 address pool for the LAN.
+# IMPORTANT: 192.168.31.50-.59 must be EXCLUDED from the router's DHCP lease range
+# to avoid IP conflicts. Pi-hole's DNS VIP is pinned to 192.168.31.53 (see pihole.yaml).
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: lan-pool
+  namespace: metallb-system
+spec:
+  addresses:
+    - 192.168.31.50-192.168.31.59
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: lan-l2
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+    - lan-pool

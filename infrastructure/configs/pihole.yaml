@@ -1,0 +1,68 @@
+# Pi-hole (mojo2600 chart, Pi-hole v6). Adopts the existing Helm release "pihole" in the
+# pihole namespace. Chart pinned to the currently-deployed 2.35.0 with values identical to
+# the live release so the first Flux reconcile is a no-op — DNS VIP 192.168.31.53 and the
+# PVC on talos-w1 are untouched. The admin password comes from Secret pihole-admin, which is
+# reconciled from pihole-sealedsecret.yaml (committed once the sealed-secrets controller is up).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: pihole
+  labels:
+    pod-security.kubernetes.io/enforce: privileged
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: mojo2600
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: https://mojo2600.github.io/pihole-kubernetes/
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: pihole
+  namespace: pihole
+spec:
+  interval: 1h
+  releaseName: pihole
+  chart:
+    spec:
+      chart: pihole
+      version: "2.35.0"
+      sourceRef:
+        kind: HelmRepository
+        name: mojo2600
+        namespace: flux-system
+  values:
+    # DNS + Web share the single MetalLB VIP 192.168.31.53 via allow-shared-ip.
+    serviceDns:
+      type: LoadBalancer
+      mixedService: true
+      loadBalancerIP: 192.168.31.53
+      annotations:
+        metallb.universe.tf/allow-shared-ip: pihole
+    serviceWeb:
+      type: LoadBalancer
+      loadBalancerIP: 192.168.31.53
+      annotations:
+        metallb.universe.tf/allow-shared-ip: pihole
+    serviceDhcp:
+      enabled: false
+    persistentVolumeClaim:
+      enabled: true
+      size: 1Gi
+      storageClass: local-path
+    nodeSelector:
+      kubernetes.io/hostname: talos-w1
+    admin:
+      enabled: true
+      existingSecret: pihole-admin
+      passwordKey: password
+    DNS1: "1.1.1.1"
+    DNS2: "8.8.8.8"
+    dnsmasq:
+      customDnsEntries:
+        - address=/talos-cp.lan/192.168.31.20
+        - address=/pihole.lan/192.168.31.53

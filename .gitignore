@@ -1,0 +1,15 @@
+# --- SECRET-BEARING Talos machine configs & credentials — NEVER commit (public repo) ---
+# These contain cluster CA private keys, the bootstrap token, and etcd certs.
+config/talosconfig
+config/controlplane.yaml
+config/worker1.yaml
+config/worker2.yaml
+config/secrets.yaml
+
+# Flux bootstrap SSH deploy key (lives in-cluster as a Secret)
+flux-deploy-key
+flux-deploy-key.pub
+
+# Misc
+*.agekey
+.DS_Store

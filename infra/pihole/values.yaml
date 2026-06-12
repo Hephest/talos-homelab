@@ -1,0 +1,47 @@
+# Helm values for mojo2600/pihole (chart 2.35.0, Pi-hole v6).
+# DNS + Web share the single MetalLB VIP 192.168.31.53 via allow-shared-ip.
+
+# Single LoadBalancer Service carrying both TCP and UDP :53.
+serviceDns:
+  type: LoadBalancer
+  mixedService: true
+  loadBalancerIP: 192.168.31.53
+  annotations:
+    metallb.universe.tf/allow-shared-ip: pihole
+
+# Admin/web UI on the same VIP (different ports, so IP-sharing is allowed).
+serviceWeb:
+  type: LoadBalancer
+  loadBalancerIP: 192.168.31.53
+  annotations:
+    metallb.universe.tf/allow-shared-ip: pihole
+
+# Not running Pi-hole as a DHCP server.
+serviceDhcp:
+  enabled: false
+
+# Persist /etc/pihole on local-path (pinned to talos-w1 below).
+persistentVolumeClaim:
+  enabled: true
+  size: 1Gi
+  storageClass: local-path
+
+# Pin to the node whose disk holds the PVC.
+nodeSelector:
+  kubernetes.io/hostname: talos-w1
+
+# Admin password supplied via pre-created secret 'pihole-admin' (key: password).
+admin:
+  enabled: true
+  existingSecret: pihole-admin
+  passwordKey: password
+
+# Upstream resolvers for non-local names.
+DNS1: "1.1.1.1"
+DNS2: "8.8.8.8"
+
+# Local split-horizon record so every LAN client resolves the API endpoint.
+dnsmasq:
+  customDnsEntries:
+    - address=/talos-cp.lan/192.168.31.20
+    - address=/pihole.lan/192.168.31.53

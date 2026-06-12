@@ -1,0 +1,37 @@
+# MetalLB L2 load balancer. Adopts the existing Helm release "metallb" in metallb-system.
+# Version pinned to the currently-deployed chart (0.16.1) with default values so the first
+# Flux reconcile is a no-op upgrade — the LoadBalancer VIP 192.168.31.53 stays up.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: metallb-system
+  labels:
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/audit: privileged
+    pod-security.kubernetes.io/warn: privileged
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: metallb
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: https://metallb.github.io/metallb
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: metallb
+  namespace: metallb-system
+spec:
+  interval: 1h
+  releaseName: metallb
+  chart:
+    spec:
+      chart: metallb
+      version: "0.16.1"
+      sourceRef:
+        kind: HelmRepository
+        name: metallb
+        namespace: flux-system
