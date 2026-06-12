@@ -48,10 +48,11 @@ spec:
             exec:
               command:
                 - mc-monitor
-                - status
-                - --bedrock
+                - status-bedrock
                 - --host
                 - 127.0.0.1
+                - --port
+                - "19132"
             initialDelaySeconds: 30
             periodSeconds: 10
             failureThreshold: 6
