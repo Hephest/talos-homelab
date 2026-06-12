@@ -4,3 +4,4 @@ resources:
   - sealed-secrets.yaml
   - metallb.yaml
   - local-path/local-path.yaml
+  - metrics-server.yaml
