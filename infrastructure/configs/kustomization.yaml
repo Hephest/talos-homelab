@@ -3,4 +3,4 @@ kind: Kustomization
 resources:
   - metallb-pools.yaml
   - pihole.yaml
-  # - pihole-sealedsecret.yaml   # added after the sealed-secrets controller is up
+  - pihole-sealedsecret.yaml
